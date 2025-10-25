@@ -9,8 +9,14 @@ export const userRoutes = [
   {
     method: "GET",
     path: "/users",
-    handler: (_: http.IncomingMessage, res: http.ServerResponse) => {
-      const users = database.select("users");
+    handler: (req: http.IncomingMessage, res: http.ServerResponse) => {
+      const { search } = (req as any).query;
+
+      const users = database.select(
+        "users",
+        search ? { name: search, email: search } : undefined
+      );
+
       return res.end(JSON.stringify(users));
     },
   },
