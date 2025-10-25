@@ -43,8 +43,21 @@ export class Database<T extends Record<string, any[]>> {
     await this.isReady;
   }
 
-  select<K extends keyof T>(table: K): T[K] {
-    return this.database?.[table] ?? ([] as unknown as T[K]);
+  select<K extends keyof T>(
+    table: K,
+    queryOptions?: Record<string, any>
+  ): T[K] {
+    let data = this.database?.[table] ?? ([] as unknown as T[K]);
+
+    if (queryOptions) {
+      data = data.filter((row) =>
+        Object.entries(queryOptions).some(([key, value]) =>
+          row[key].toLowerCase().includes(value.toLowerCase())
+        )
+      ) as unknown as T[K];
+    }
+
+    return data;
   }
 
   async insert<K extends keyof T>(table: K, data: T[K][number]) {
