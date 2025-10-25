@@ -1,29 +1,39 @@
 import http from "node:http";
 import { logger } from "./logger.js";
 import { json } from "./middlewares/json.js";
-import type { User } from "./entitties/User.js";
-
-const users: User[] = [];
+import { routes } from "./routes/routes.js";
+import { extractQueryParams } from "./shared/extract-query-params.js";
 
 const server = http.createServer(async (req, res) => {
   const { method, url } = req;
 
   await json(req, res);
 
-  if (method === "GET" && url === "/users") {
-    return res.end(JSON.stringify(users));
-  }
+  const route = routes.find(
+    (route) =>
+      route.method === method && new RegExp(route.path).test(String(url))
+  );
 
-  if (method === "POST" && url === "/users") {
-    const { name, email } = (req as any).body;
+  if (route) {
+    const routeParams = req.url?.match(route.path);
+    const groups = routeParams?.groups;
 
-    users.push({
-      id: 1,
-      name: String(name),
-      email: String(email),
-    });
+    let query: string | undefined;
+    let params: Record<string, string> = {};
 
-    return res.writeHead(201).end();
+    if (groups) {
+      const mutableGroups = { ...groups };
+      if ("query" in mutableGroups) {
+        query = mutableGroups.query;
+        delete mutableGroups.query;
+      }
+      params = mutableGroups;
+    }
+
+    (req as any).params = params;
+    (req as any).query = query ? extractQueryParams(query) : {};
+
+    return route.handler(req, res);
   }
 
   return res.writeHead(404).end();
