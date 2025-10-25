@@ -1,37 +1,17 @@
 import http from "node:http";
 import { logger } from "./logger.js";
-
-interface User {
-  id: number;
-  name: string;
-  email: string;
-}
+import { json } from "./middlewares/json.js";
+import type { User } from "./entitties/User.js";
 
 const users: User[] = [];
-
-async function readAndAttachJsonBody(req: http.IncomingMessage) {
-  const buffer = [];
-
-  try {
-    for await (const chunk of req) {
-      buffer.push(chunk);
-    }
-
-    (req as any).body = JSON.parse(Buffer.concat(buffer).toString());
-  } catch (error) {
-    (req as any).body = null;
-  }
-}
 
 const server = http.createServer(async (req, res) => {
   const { method, url } = req;
 
-  await readAndAttachJsonBody(req);
+  await json(req, res);
 
   if (method === "GET" && url === "/users") {
-    return res
-      .setHeader("Content-type", "application/json")
-      .end(JSON.stringify(users));
+    return res.end(JSON.stringify(users));
   }
 
   if (method === "POST" && url === "/users") {
