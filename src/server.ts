@@ -7,7 +7,11 @@ import { extractQueryParams } from "./shared/extract-query-params.js";
 const server = http.createServer(async (req, res) => {
   const { method, url } = req;
 
-  await json(req, res);
+  // Skip JSON middleware for multipart/form-data
+  const isMultipart = req.headers["content-type"]?.includes("multipart/form-data");
+  if (!isMultipart) {
+    await json(req, res);
+  }
 
   const route = routes.find(
     (route) =>
